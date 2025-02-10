@@ -17,7 +17,7 @@ with open(CSV_PATH, 'r', encoding='utf-8') as f:
 
 # 2. 이미지 폴더 내 파일들에 대해 이름 변경
 for file_name in os.listdir(IMAGE_FOLDER):
-    # "task-1680.jpg"처럼 "task-"로 시작하고 ".jpg"로 끝나는 파일만 처리
+    # "task-1680.jpg"처럼 "task-"로 시작하고 ".png"로 끝나는 파일만 처리
     if file_name.startswith("task-") and file_name.endswith(".png"):
         # "task-1680.jpg"에서 '1680' 부분만 추출
         file_id = file_name[len("task-"):9]  # "1680"

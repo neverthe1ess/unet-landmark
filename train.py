@@ -14,7 +14,6 @@ from dataset import *
 from util import *
 
 import matplotlib.pyplot as plt
-import gc
 
 from torchvision import transforms, datasets
 
@@ -49,7 +48,7 @@ result_dir = args.result_dir
 
 mode = args.mode
 train_continue = args.train_continue
-
+# macOS apple slicon 수행 고려
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps')
 
 print("learning rate: %.4e" % lr)
@@ -68,8 +67,7 @@ if not os.path.exists(result_dir):
 
 ## 네트워크 학습하기
 if mode == 'train':
-    transform = transforms.Compose([
-    Resize((256,256)),Normalization(mean=0.5, std=0.5), RandomFlip(), ToTensor()])
+    transform = transforms.Compose([Resize((512,512)),Normalization(mean=0.5, std=0.5), RandomFlip(), ToTensor()])
 
     dataset_train = Dataset(data_dir=os.path.join(data_dir, 'train'), transform=transform)
     loader_train = DataLoader(dataset_train, batch_size=batch_size, shuffle=True, num_workers=0)
@@ -83,10 +81,9 @@ if mode == 'train':
 
     num_batch_train = np.ceil(num_data_train / batch_size)
     num_batch_val = np.ceil(num_data_val / batch_size)
+
 else:
-    transform = transforms.Compose([
-    Resize((256,256)),
-    Normalization(mean=0.5, std=0.5), ToTensor()])
+    transform = transforms.Compose([Resize((512,512)),Normalization(mean=0.5, std=0.5), ToTensor()])
 
     dataset_test = Dataset(data_dir=os.path.join(data_dir, 'test'), transform=transform)
     loader_test = DataLoader(dataset_test, batch_size=batch_size, shuffle=False, num_workers=0)

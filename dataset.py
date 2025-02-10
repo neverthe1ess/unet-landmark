@@ -97,7 +97,8 @@ class RandomFlip(object):
         data = {'label': label, 'input': input}
 
         return data
-        
+
+## 원본 파일의 해상도가 너무 커서 resize        
 class Resize(object):
     def __init__(self, size=(256, 256)):
         self.size = size
