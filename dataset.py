@@ -4,6 +4,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from PIL import Image
+from numpy import dtype
+
+
 ## 데이터 로더를 구현하기
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, data_dir, transform=None):
@@ -25,8 +29,14 @@ class Dataset(torch.utils.data.Dataset):
         return len(self.lst_label)
 
     def __getitem__(self, index):
-        label = np.load(os.path.join(self.data_dir, self.lst_label[index]))
-        input = np.load(os.path.join(self.data_dir, self.lst_input[index]))
+        label_path = os.path.join(self.data_dir, self.lst_label[index])
+        input_path = os.path.join(self.data_dir, self.lst_input[index])
+
+        label_pil = Image.open(label_path).convert("L")
+        label = np.array(label_pil, dtype=np.uint8)
+
+        input_pil = Image.open(input_path).convert("RGB")
+        input = np.array(input_pil, dtype=np.uint8)
 
         label = label/255.0
         input = input/255.0
