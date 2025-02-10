@@ -14,6 +14,7 @@ from dataset import *
 from util import *
 
 import matplotlib.pyplot as plt
+import gc
 
 from torchvision import transforms, datasets
 
@@ -22,7 +23,7 @@ parser = argparse.ArgumentParser(description="Train the UNet",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument("--lr", default=1e-3, type=float, dest="lr")
-parser.add_argument("--batch_size", default=4, type=int, dest="batch_size")
+parser.add_argument("--batch_size", default=2, type=int, dest="batch_size")
 parser.add_argument("--num_epoch", default=100, type=int, dest="num_epoch")
 
 parser.add_argument("--data_dir", default="./datasets", type=str, dest="data_dir")
@@ -34,6 +35,7 @@ parser.add_argument("--mode", default="train", type=str, dest="mode")
 parser.add_argument("--train_continue", default="off", type=str, dest="train_continue")
 
 args = parser.parse_args()
+
 
 ## 트레이닝 파라메터 설정하기
 lr = args.lr
@@ -66,7 +68,8 @@ if not os.path.exists(result_dir):
 
 ## 네트워크 학습하기
 if mode == 'train':
-    transform = transforms.Compose([Normalization(mean=0.5, std=0.5), RandomFlip(), ToTensor()])
+    transform = transforms.Compose([
+    Resize((256,256)),Normalization(mean=0.5, std=0.5), RandomFlip(), ToTensor()])
 
     dataset_train = Dataset(data_dir=os.path.join(data_dir, 'train'), transform=transform)
     loader_train = DataLoader(dataset_train, batch_size=batch_size, shuffle=True, num_workers=0)
@@ -81,7 +84,9 @@ if mode == 'train':
     num_batch_train = np.ceil(num_data_train / batch_size)
     num_batch_val = np.ceil(num_data_val / batch_size)
 else:
-    transform = transforms.Compose([Normalization(mean=0.5, std=0.5), ToTensor()])
+    transform = transforms.Compose([
+    Resize((256,256)),
+    Normalization(mean=0.5, std=0.5), ToTensor()])
 
     dataset_test = Dataset(data_dir=os.path.join(data_dir, 'test'), transform=transform)
     loader_test = DataLoader(dataset_test, batch_size=batch_size, shuffle=False, num_workers=0)
@@ -116,7 +121,7 @@ st_epoch = 0
 if mode == 'train':
     if train_continue == "on":
         net, optim, st_epoch = load(ckpt_dir=ckpt_dir, net=net, optim=optim)
-
+	
     for epoch in range(st_epoch + 1, num_epoch + 1):
         net.train()
         loss_arr = []
