@@ -1,2 +1,7 @@
 # 용량이 큰 checkpoint 제외
 checkpoint/
+input_raw/
+label_raw/
+datasets/test/
+datasets/train/
+datasets/val

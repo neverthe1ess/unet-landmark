@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser(description="Train the UNet",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument("--lr", default=1e-3, type=float, dest="lr")
-parser.add_argument("--batch_size", default=2, type=int, dest="batch_size")
+parser.add_argument("--batch_size", default=8, type=int, dest="batch_size")
 parser.add_argument("--num_epoch", default=100, type=int, dest="num_epoch")
 
 parser.add_argument("--data_dir", default="./datasets", type=str, dest="data_dir")

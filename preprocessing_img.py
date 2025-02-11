@@ -2,8 +2,8 @@ import csv
 import os
 
 # CSV 파일 경로 및 이미지가 들어 있는 폴더 경로 지정
-CSV_PATH = 'project-5-at-2025-02-09-15-17-9564c34a.csv'
-IMAGE_FOLDER = '/Users/neverthe1ess/PycharmProjects/youtube-cnn-002-pytorch-unet/raw'
+CSV_PATH = 'mappingPath.csv'
+IMAGE_FOLDER = '/Users/neverthe1ess/PycharmProjects/unet-landmark/label_raw'
 
 # 1. CSV 파일을 읽어 id -> file_name 매핑 딕셔너리 생성
 id_to_file_name = {}
@@ -27,7 +27,7 @@ for file_name in os.listdir(IMAGE_FOLDER):
             new_name = id_to_file_name[file_id]  # "10.jpg"
 
             old_path = os.path.join(IMAGE_FOLDER, file_name)
-            new_path = os.path.join(IMAGE_FOLDER, "label_"+ new_name)
+            new_path = os.path.join(IMAGE_FOLDER, "label_"+ new_name[:-4] + ".png")
 
             # 실제 파일 이름 변경
             os.rename(old_path, new_path)

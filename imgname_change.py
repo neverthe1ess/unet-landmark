@@ -1,6 +1,6 @@
 import os
 
-IMAGE_FOLDER = '/home/user/dev/unet-landmark/input_raw'
+IMAGE_FOLDER = '/Users/neverthe1ess/PycharmProjects/unet-landmark/input_raw'
 
 
 for filename in os.listdir(IMAGE_FOLDER):
