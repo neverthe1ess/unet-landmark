@@ -68,7 +68,7 @@ if not os.path.exists(result_dir):
 ## 네트워크 학습하기
 if mode == 'train':
     transform = transforms.Compose([Resize((512,512)),Normalization(mean=0.5, std=0.5), RandomFlip(), ToTensor()])
-
+    # 훈련만 셔플 사용
     dataset_train = Dataset(data_dir=os.path.join(data_dir, 'train'), transform=transform)
     loader_train = DataLoader(dataset_train, batch_size=batch_size, shuffle=True, num_workers=0)
 
@@ -225,6 +225,14 @@ else:
                 plt.imsave(os.path.join(result_dir, 'png', 'label_%04d.png' % id), label[j].squeeze(), cmap='gray')
                 plt.imsave(os.path.join(result_dir, 'png', 'input_%04d.png' % id), input[j].squeeze(), cmap='gray')
                 plt.imsave(os.path.join(result_dir, 'png', 'output_%04d.png' % id), output[j].squeeze(), cmap='gray')
+
+                # 오버레이 이미지 저장
+                fig, ax = plt.subplots(figsize=(5, 5))  # 개별 이미지 크기 조정
+                ax.imshow(input[j].squeeze(), cmap='gray')  # 원본 input 표시
+                ax.imshow(output[j].squeeze(), cmap='Reds', alpha=0.5)  # output을 빨간색으로 overlay
+                ax.axis('off')  # 축 제거 (깔끔한 저장을 위해)
+                plt.savefig(os.path.join(result_dir, 'overlay', 'overlay_%04d.png' % id), bbox_inches='tight', pad_inches=0)
+                plt.close(fig)  # 메모리 절약을 위해 figure 닫기
 
                 np.save(os.path.join(result_dir, 'numpy', 'label_%04d.npy' % id), label[j].squeeze())
                 np.save(os.path.join(result_dir, 'numpy', 'input_%04d.npy' % id), input[j].squeeze())

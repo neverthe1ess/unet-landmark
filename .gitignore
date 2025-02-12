@@ -5,3 +5,6 @@ label_raw/
 datasets/test/
 datasets/train/
 datasets/val
+work_dir/
+external_input_raw/
+external_label_raw/
