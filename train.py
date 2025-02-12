@@ -118,10 +118,19 @@ st_epoch = 0
 if mode == 'train':
     if train_continue == "on":
         net, optim, st_epoch = load(ckpt_dir=ckpt_dir, net=net, optim=optim)
-	
+
+    # best.pt를 저장하기 위한 평가 지표 설정
+    best_val_dice = 0.0
+
     for epoch in range(st_epoch + 1, num_epoch + 1):
         net.train()
+        # 지표 계산을 위해 누적할 리스트
         loss_arr = []
+        iou_arr = []
+        dice_arr = []
+        precision_arr = []
+        recall_arr = []
+        f1_arr = []
 
         for batch, data in enumerate(loader_train, 1):
             # forward pass
@@ -132,14 +141,19 @@ if mode == 'train':
 
             # backward pass
             optim.zero_grad()
-
             loss = fn_loss(output, label)
             loss.backward()
-
             optim.step()
 
-            # 손실함수 계산
+            # 평가지표 계산
             loss_arr += [loss.item()]
+            pred = (torch.sigmoid(output) > 0.5).float()
+            iou, dice, precision, recall, f1 = get_segmentation_metrics(pred, label)
+            iou_arr.append(iou)
+            dice_arr.append(dice)
+            precision_arr.append(precision)
+            recall_arr.append(recall)
+            f1_arr.append(f1)
 
             print("TRAIN: EPOCH %04d / %04d | BATCH %04d / %04d | LOSS %.4f" %
                   (epoch, num_epoch, batch, num_batch_train, np.mean(loss_arr)))
@@ -153,23 +167,54 @@ if mode == 'train':
             writer_train.add_image('input', input, num_batch_train * (epoch - 1) + batch, dataformats='NHWC')
             writer_train.add_image('output', output, num_batch_train * (epoch - 1) + batch, dataformats='NHWC')
 
-        writer_train.add_scalar('loss', np.mean(loss_arr), epoch)
+        # Epoch이 끝난 후 평균 Loss/지표 산출
+        loss_epoch = np.mean(loss_arr)
+        iou_epoch = np.mean(iou_arr)
+        dice_epoch = np.mean(dice_arr)
+        precision_epoch = np.mean(precision_arr)
+        recall_epoch = np.mean(recall_arr)
+        f1_epoch = np.mean(f1_arr)
 
+        # Tensorboard 에 기록
+        writer_train.add_scalar('loss', loss_epoch, epoch)
+        writer_train.add_scalar('IoU', iou_epoch, epoch)
+        writer_train.add_scalar('Dice', dice_epoch, epoch)
+        writer_train.add_scalar('Precision', precision_epoch, epoch)
+        writer_train.add_scalar('Recall', recall_epoch, epoch)
+        writer_train.add_scalar('F1', f1_epoch, epoch)
+
+        # ------------------
+        # Validation
+        # ------------------
         with torch.no_grad():
             net.eval()
             loss_arr = []
+
+            # val 지표 계산 리스트
+            iou_arr = []
+            dice_arr = []
+            precision_arr = []
+            recall_arr = []
+            f1_arr = []
 
             for batch, data in enumerate(loader_val, 1):
                 # forward pass
                 label = data['label'].to(device)
                 input = data['input'].to(device)
-
                 output = net(input)
 
                 # 손실함수 계산하기
                 loss = fn_loss(output, label)
-
                 loss_arr += [loss.item()]
+
+                # 지표 계산
+                pred = (torch.sigmoid(output) > 0.5).float()
+                iou, dice, precision, recall, f1 = get_segmentation_metrics(pred, label)
+                iou_arr.append(iou)
+                dice_arr.append(dice)
+                precision_arr.append(precision)
+                recall_arr.append(recall)
+                f1_arr.append(f1)
 
                 print("VALID: EPOCH %04d / %04d | BATCH %04d / %04d | LOSS %.4f" %
                       (epoch, num_epoch, batch, num_batch_val, np.mean(loss_arr)))
@@ -183,10 +228,32 @@ if mode == 'train':
                 writer_val.add_image('input', input, num_batch_val * (epoch - 1) + batch, dataformats='NHWC')
                 writer_val.add_image('output', output, num_batch_val * (epoch - 1) + batch, dataformats='NHWC')
 
-        writer_val.add_scalar('loss', np.mean(loss_arr), epoch)
+        # Epoch 단위 평균
+        loss_epoch = np.mean(loss_arr)
+        iou_epoch = np.mean(iou_arr)
+        dice_epoch = np.mean(dice_arr)
+        precision_epoch = np.mean(precision_arr)
+        recall_epoch = np.mean(recall_arr)
+        f1_epoch = np.mean(f1_arr)
 
+        writer_val.add_scalar('loss', loss_epoch, epoch)
+        writer_val.add_scalar('IoU', iou_epoch, epoch)
+        writer_val.add_scalar('Dice', dice_epoch, epoch)
+        writer_val.add_scalar('Precision', precision_epoch, epoch)
+        writer_val.add_scalar('Recall', recall_epoch, epoch)
+        writer_val.add_scalar('F1', f1_epoch, epoch)
+
+        # epoch 50 마다 저장
         if epoch % 50 == 0:
             save(ckpt_dir=ckpt_dir, net=net, optim=optim, epoch=epoch)
+
+        # ----- Best pt 모델 저장 -----
+        if dice_epoch > best_val_dice:
+            best_val_dice = dice_epoch
+            print("***** Best performance updated - Saving the model *****")
+
+            # best 모델로 저장
+            save(ckpt_dir=ckpt_dir, net=net, optim=optim, epoch=epoch, filename="model_best.pth")
 
     writer_train.close()
     writer_val.close()
@@ -198,18 +265,31 @@ else:
     with torch.no_grad():
         net.eval()
         loss_arr = []
+        iou_arr = []
+        dice_arr = []
+        precision_arr = []
+        recall_arr = []
+        f1_arr = []
 
         for batch, data in enumerate(loader_test, 1):
             # forward pass
             label = data['label'].to(device)
             input = data['input'].to(device)
-
             output = net(input)
 
             # 손실함수 계산하기
             loss = fn_loss(output, label)
-
             loss_arr += [loss.item()]
+
+            # 지표 계산
+            pred = (torch.sigmoid(output) > 0.5).float()
+            iou, dice, precision, recall, f1 = get_segmentation_metrics(pred, label)
+            iou_arr.append(iou)
+            dice_arr.append(dice)
+            precision_arr.append(precision)
+            recall_arr.append(recall)
+            f1_arr.append(f1)
+
 
             print("TEST: BATCH %04d / %04d | LOSS %.4f" %
                   (batch, num_batch_test, np.mean(loss_arr)))
@@ -238,6 +318,14 @@ else:
                 np.save(os.path.join(result_dir, 'numpy', 'input_%04d.npy' % id), input[j].squeeze())
                 np.save(os.path.join(result_dir, 'numpy', 'output_%04d.npy' % id), output[j].squeeze())
 
+        # 테스트 전체 평균 지표 출력
+        iou_avg = np.mean(iou_arr)
+        dice_avg = np.mean(dice_arr)
+        precision_avg = np.mean(precision_arr)
+        recall_avg = np.mean(recall_arr)
+        f1_avg = np.mean(f1_arr)
+
     print("AVERAGE TEST: BATCH %04d / %04d | LOSS %.4f" %
           (batch, num_batch_test, np.mean(loss_arr)))
-
+    print(f"TEST METRICS :: IoU: {iou_avg:.4f}, Dice: {dice_avg:.4f}, "
+              f"Precision: {precision_avg:.4f}, Recall: {recall_avg:.4f}, F1: {f1_avg:.4f}")
